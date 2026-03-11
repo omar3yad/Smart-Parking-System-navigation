@@ -1,0 +1,68 @@
+import 'package:dio/dio.dart';
+import '../models/parking_slot.dart';
+import '../models/parking_summary.dart';
+import '../services/api_client.dart';
+
+class ParkingRepository {
+  ParkingRepository({ApiClient? apiClient})
+      : _apiClient = apiClient ?? ApiClient();
+
+  final ApiClient _apiClient;
+
+  Future<ParkingSummary> fetchSummary() async {
+    try {
+      final Response<dynamic> response =
+      await _apiClient.get<dynamic>('/status/summary/');
+      if (response.statusCode == 200 && response.data is Map<String, dynamic>) {
+        return ParkingSummary.fromJson(response.data as Map<String, dynamic>);
+      }
+      throw Exception('Failed to load summary (${response.statusCode})');
+    } on DioException catch (e) {
+      throw Exception(_extractErrorMessage(e,
+          fallback: 'Failed to load parking summary'));
+    }
+  }
+
+  // تم تعديل الدالة هنا لاستقبال floor
+  Future<List<ParkingSlot>> fetchSlots({String? status, String? floor}) async {
+    try {
+      final Response<dynamic> response = await _apiClient.get<dynamic>(
+        '/slots/',
+        queryParameters: <String, dynamic>{
+          if (status != null && status.isNotEmpty) 'status': status,
+          // إرسال الدور المختار للسيرفر
+          if (floor != null && floor.isNotEmpty) 'floor': floor,
+        },
+      );
+
+      if (response.statusCode == 200 && response.data is List<dynamic>) {
+        final list = response.data as List<dynamic>;
+        return list
+            .whereType<Map<String, dynamic>>()
+            .map(ParkingSlot.fromJson)
+            .toList();
+      }
+      throw Exception('Failed to load slots (${response.statusCode})');
+    } on DioException catch (e) {
+      throw Exception(
+          _extractErrorMessage(e, fallback: 'Failed to load parking slots'));
+    }
+  }
+
+  String _extractErrorMessage(
+      DioException exception, {
+        required String fallback,
+      }) {
+    final response = exception.response;
+    if (response?.data is Map<String, dynamic>) {
+      final data = response!.data as Map<String, dynamic>;
+      if (data['detail'] != null) {
+        return data['detail'].toString();
+      }
+      if (data['error'] != null) {
+        return data['error'].toString();
+      }
+    }
+    return fallback;
+  }
+}
