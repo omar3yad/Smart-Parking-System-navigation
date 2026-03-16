@@ -8,9 +8,9 @@ from gates.BaseGate import BaseGate
 import numpy as np
 class EntranceGate(BaseGate):
 
-    def __init__(self, source, car_model_path,plate_model_path,plate_recognition_path ,save_dir="entrance_captures"):
+    def __init__(self, source, car_model_path,plate_model_path,plate_recognition_path , backend_url=None):
 
-        super().__init__(source, car_model_path,plate_model_path,plate_recognition_path,save_dir)
+        super().__init__(source, car_model_path,plate_model_path,plate_recognition_path, backend_url)
 
 
         self.start_left = (3, 334)
@@ -54,11 +54,16 @@ class EntranceGate(BaseGate):
 
                 self.draw_lines(frame)
 
-                cv2.imshow("Entrance Gate", frame)
+            #     cv2.imshow("Entrance Gate", frame)
 
-            if cv2.waitKey(1) & 0xFF == 27:
-                self.running = False
-                break
+            key = cv2.waitKey(1) & 0xFF
+
+            if key == ord('q'):   # pause / resume
+              paused = not paused
+
+            if key == 27:  # ESC
+              self.running = False
+              break
 
         camera.join()
         detection.join()
