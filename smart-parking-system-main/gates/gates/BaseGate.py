@@ -2,11 +2,8 @@ import cv2
 import os
 import time
 import numpy as np
-from PIL import Image
 from ultralytics import YOLO
-from torchvision.models import resnet50, ResNet50_Weights
-import torch
-import torchvision.transforms as T
+from APIClient import APIClient
 
 class BaseGate:
 
@@ -15,7 +12,8 @@ class BaseGate:
                  car_model_path,
                  plate_model_path,
                  plate_recognition_path,
-                 save_dir="captures"):
+                 backend_url
+                 ):
 
         self.source = source
         self.running = True
@@ -30,39 +28,7 @@ class BaseGate:
         self.processed_ids = set()
         self.frame_buffers = {}
 
-        os.makedirs(save_dir, exist_ok=True)
-        self.save_dir = save_dir
-
-    # =========================
-    def get_embedding(self,image):
-        color_coverted = cv2.cvtColor(image, cv2.COLOR_BGR2RGB)
-        pil_image = Image.fromarray(color_coverted)
-        model = resnet50(weights=ResNet50_Weights.DEFAULT)
-        model = torch.nn.Sequential(*(list(model.children())[:-1]))  # Strips the last layer
-        model.eval()
-        preprocess = T.Compose([
-            T.Resize((224, 224)),
-            T.ToTensor(),
-            T.Normalize(mean=[0.485, 0.456, 0.406], std=[0.229, 0.224, 0.225]),
-        ])
-        input_tensor = preprocess(pil_image).unsqueeze(0)
-
-        with torch.no_grad():
-            embedding = model(input_tensor)
-        return embedding.flatten().numpy()
-
-
-
-
-    def save_car(self, image, track_id, plate_text):
-
-        filename = f"{self.save_dir}/{plate_text}.jpg"
-
-        cv2.imwrite(filename, image)
-        print(self.get_embedding(image))
-        print("Saved:", filename)
-
-        return filename
+        self.api = APIClient(backend_url)
 
     # =========================
 
@@ -75,6 +41,22 @@ class BaseGate:
         return lap.var()
 
     # =========================
+    # def get_embedding(self,image):
+    #     color_coverted = cv2.cvtColor(image, cv2.COLOR_BGR2RGB)
+    #     pil_image = Image.fromarray(color_coverted)
+    #     model = resnet50(weights=ResNet50_Weights.DEFAULT)
+    #     model = torch.nn.Sequential(*(list(model.children())[:-1]))  # Strips the last layer
+    #     model.eval()
+    #     preprocess = T.Compose([
+    #         T.Resize((224, 224)),
+    #         T.ToTensor(),
+    #         T.Normalize(mean=[0.485, 0.456, 0.406], std=[0.229, 0.224, 0.225]),
+    #     ])
+    #     input_tensor = preprocess(pil_image).unsqueeze(0)
+
+    #     with torch.no_grad():
+    #         embedding = model(input_tensor)
+    #     return embedding.flatten().numpy()
 
     def get_best_frame(self, track_id):
 
@@ -184,22 +166,15 @@ class BaseGate:
 
             crop = frame[y1:y2, x1:x2]
 
-            # ======================
-            # جمع الفريمات
-            # ======================
+            
 
             if track_id not in self.frame_buffers:
                 self.frame_buffers[track_id] = []
 
             self.frame_buffers[track_id].append(crop.copy())
 
-            # نحدد عدد الفريمات
             if len(self.frame_buffers[track_id]) > 10:
                 self.frame_buffers[track_id].pop(0)
-
-            # ======================
-            # حساب عبور الخط
-            # ======================
 
             current_position = self.is_crossing_line(
                 (cx, cy),
@@ -212,7 +187,6 @@ class BaseGate:
             if previous_position is not None:
 
 
-                # if previous_position < 0 and current_position >= 0:
                 if previous_position * current_position < 0:
                     if track_id not in self.processed_ids:
 
@@ -222,12 +196,11 @@ class BaseGate:
                             plate = self.detect_and_draw_plate(best_frame)
 
                             print("Plate:", plate)
+                            # embedding = self.get_embedding(best_frame)
+                            # print("Embedding:", embedding)
+                            self.api.send_to_backend(best_frame, plate)
 
-                            image_path = self.save_car(best_frame, track_id,plate)
-
-                            print("Captured:", image_path)
-
-
+                          
                         self.processed_ids.add(track_id)
 
             self.previous_side[track_id] = current_position
