@@ -8,19 +8,23 @@ from gates.ExitGate import ExitGate
 import threading
 
 def main():
+
     entrance = EntranceGate(
-        source="./car_clips/car/D04.mp4",
+        source="./car_clips/Entrance/car_18.mp4",
         car_model_path="Models/car_detection/yolov8m.pt",
         plate_model_path="Models/plate_detection/best.pt",
         plate_recognition_path="Models/plate_recognition/best.pt",
+        backend_url="http://127.0.0.1:8000/api/entry/"
     )
 
-    # exit_gate = ExitGate(
-    #     source="./car_clips/Exit v1/car_19.mp4",
-    #     car_model_path="Models/car_detection/yolov8m.pt",
-    #     plate_model_path="Models/plate_detection/best.pt",
-    #     plate_recognition_path="Models/plate_recognition/best.pt",
-    # )
+    exit_gate = ExitGate(
+        source="./car_clips/Exit/car_19.mp4",
+        car_model_path="Models/car_detection/yolov8m.pt",
+        plate_model_path="Models/plate_detection/best.pt",
+        plate_recognition_path="Models/plate_recognition/best.pt",
+        backend_url="http://127.0.0.1:8000/api/exit/"
+    )
+
 
     # entrance = EntranceGate(
     #     source="rtsp://admin:M.H.M&F.Y.M&9620@192.168.1.100:554/Streaming/Channels/101",
@@ -37,13 +41,13 @@ def main():
     # )
 
     entrance_thread = threading.Thread(target=entrance.run)
-    # exit_thread = threading.Thread(target=exit_gate.run)
+    exit_thread = threading.Thread(target=exit_gate.run)
 
     entrance_thread.start()
-    # exit_thread.start()
+    exit_thread.start()
 
     entrance_thread.join()
-    # exit_thread.join()
+    exit_thread.join()
 
 
 if __name__ == "__main__":
