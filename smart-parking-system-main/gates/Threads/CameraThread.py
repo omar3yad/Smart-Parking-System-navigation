@@ -10,7 +10,7 @@ class CameraThread(threading.Thread):
         self.gate = gate
         self.cap = None
         self.fail_count = 0
-        self.max_fail = 10
+        self.max_fail = 3
 
     # ============================
 
@@ -58,7 +58,6 @@ class CameraThread(threading.Thread):
                 print("Corrupted frame... skipping")
 
                 if self.fail_count >= self.max_fail:
-
                     print("Too many failures → reconnecting")
 
                     if self.cap:
@@ -72,6 +71,7 @@ class CameraThread(threading.Thread):
                     self.fail_count = 0
 
                 continue
+
 
             # =========================
 
