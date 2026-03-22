@@ -1,5 +1,5 @@
-ML
-Enter API
+# ML
+## Enter API
 
 http://127.0.0.1:8000/api/entry/
 
@@ -23,7 +23,8 @@ Response
     `"entry_time": "2026-03-19T14:30:00Z",`
     `"message": "تم تسجيل الدخول وتخصيص مكان بنجاح"`
 }
-Track API
+
+# Track API
 
 http://127.0.0.1:8000/api/track/
 
@@ -44,7 +45,7 @@ Response
     "current_zone": "Zone B - Ground Floor",
     "message": "Vehicle ABC 123 tracked at Zone B"
 }
-Exit API
+# Exit API
 
 http://127.0.0.1:8000/api/exit/
 
